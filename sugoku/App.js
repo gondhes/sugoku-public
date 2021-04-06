@@ -23,7 +23,27 @@ export default function App() {
     const newBoard = JSON.parse(JSON.stringify(board))
     newBoard[rowIndex][colIndex] = value
     setBoard(newBoard)
-  };
+  }
+
+  const validate = () => {
+    const answer = { board: board }
+    const encodeBoard = (board) => board.reduce((result, row, i) => result + `%5B${encodeURIComponent(row)}%5D${i === board.length - 1 ? '' : '%2C'}`, '')
+    const encodeParams = (params) =>
+      Object.keys(params)
+        .map(key => key + '=' + `%5B${encodeBoard(params[key])}%5D`)
+        .join('&')
+    
+    axios({
+      url: 'https://sugoku.herokuapp.com/validate',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: encodeParams(answer)
+    })
+      .then(({ data }) => {
+        alert(data.status)
+      })
+      .catch(err => console.log(err))
+  }
 
   return (
     <View style={ styles.container }>
@@ -50,7 +70,7 @@ export default function App() {
           );
         }) 
       }
-      <Button title='VALIDATE'/>
+      <Button title='VALIDATE' onPress={validate}/>
     </View>
   );
 }
