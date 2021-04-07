@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { StyleSheet, Dimensions, View, Text, TextInput, Button, Image } from "react-native";
+import CountDown from "react-native-countdown-component";
 
 import { useDispatch, useSelector } from 'react-redux'
 import { setBoard, setBoardAsync } from '../store/action'
@@ -13,6 +14,15 @@ export default function Game(props) {
   const url = `${baseUrl}board?difficulty=${level}`
   const board = useSelector(state => state.board)
   const dispatch = useDispatch()
+
+  let time;
+  if(level === 'easy') {
+    time = 900
+  } else if(level === 'medium') {
+    time = 600
+  } else if(level === 'hard') {
+    time = 300
+  }
 
   useEffect(() => {
     dispatch(setBoardAsync(url))
@@ -93,7 +103,20 @@ export default function Game(props) {
           }) 
         }
         <View style={ styles.button }>
-          <Button title='SOLVE' onPress={solve}/>
+          <Button title='  SOLVE ' onPress={solve}/>
+          <CountDown
+            style={{marginRight: 75, marginLeft: 75}}
+            until={time}
+            size={15}
+            running={true}
+            onFinish={() => {
+              alert("Time's Up!!"), props.navigation.replace("Lose");
+            }}
+            digitStyle={{ backgroundColor: "red" }}
+            digitTxtStyle={{ color: "#fff" }}
+            timeToShow={["M", "S"]}
+            timeLabels={{ m: "minutes", s: "seconds" }}
+          />
           <Button title='VALIDATE' onPress={validate}/>
         </View>
       </View>

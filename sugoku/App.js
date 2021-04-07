@@ -9,6 +9,7 @@ import store from './store'
 import Home from './screens/Home'
 import Game from './screens/Game'
 import Finish from './screens/Finish'
+import Lose from './screens/Lose'
 
 const Stack = createStackNavigator();
 
@@ -20,6 +21,7 @@ export default function App() {
           <Stack.Screen name="Home" component={ Home }/>
           <Stack.Screen name="Game" component={ Game }/>
           <Stack.Screen name="Finish" component={ Finish }/>
+          <Stack.Screen name="Lose" component={ Lose }/>
         </Stack.Navigator>
       </NavigationContainer>
     </Provider>
