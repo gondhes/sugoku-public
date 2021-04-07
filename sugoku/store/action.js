@@ -1,7 +1,5 @@
 import axios from 'axios'
 
-// const url = 'https://sugoku.herokuapp.com/board?difficulty=easy'
-
 export function setBoard(payload) {
   return { type: 'board/setBoard', payload }
 }
@@ -12,8 +10,8 @@ export function setBoardAsync(url) {
       method: 'GET',
       url
     })
-      .then(board => {
-        dispatch(setBoard(board.data))
+      .then(({data}) => {
+        dispatch(setBoard(data.board))
       })
       .catch(err => console.log(err))
   }

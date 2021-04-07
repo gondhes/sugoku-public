@@ -1,74 +1,73 @@
-import axios from "axios";
-import React, { useState, useEffect } from "react";
-import { StyleSheet, Dimensions, View, Text, TextInput, Button } from "react-native";
+import React, { useEffect } from "react";
+import { StyleSheet, Dimensions, View, Text, TextInput, Button, Image } from "react-native";
+
+import { useDispatch, useSelector } from 'react-redux'
+import { setBoard, setBoardAsync } from '../store/action'
 
 const windowWidth = Dimensions.get('window').width
-const url = 'https://sugoku.herokuapp.com/board?difficulty=easy'
 
-export default function Game() {
+export default function Game(props) {
 
-  const [board, setBoard] = useState([])
+  const { username, level } = props.route.params
+  const baseUrl = 'https://sugoku.herokuapp.com/'
+  const url = `${baseUrl}board?difficulty=${level}`
+  const board = useSelector(state => state.board)
+  const dispatch = useDispatch()
 
   useEffect(() => {
-    axios({
-      url,
-      method: 'GET'
-    })
-      .then(({ data }) => {
-        setBoard(data.board)
-      })
-      .catch(err => console.log(err))
+    dispatch(setBoardAsync(url))
   }, [])
 
   const changeBoard = (text, rowIndex, colIndex) => {
     const newBoard = JSON.parse(JSON.stringify(board))
     newBoard[rowIndex][colIndex] = +text
-    setBoard(newBoard)
+    dispatch(setBoard(newBoard))
+  }
+
+  const encodeBoard = (board) => board.reduce((result, row, i) => result + `%5B${encodeURIComponent(row)}%5D${i === board.length - 1 ? '' : '%2C'}`, '')
+  const encodeParams = (params) =>
+    Object.keys(params)
+      .map(key => key + '=' + `%5B${encodeBoard(params[key])}%5D`)
+      .join('&');
+
+  const solve = () => {
+    const answer = { board: board }
+    
+    fetch(`https://sugoku.herokuapp.com/solve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: encodeParams(answer)
+    })
+      .then(response => response.json())
+      .then(result => {
+        dispatch(setBoard(result.solution))
+        alert(`Come on, you can do better than this!`)
+      })
+      .catch(console.log)
   }
 
   const validate = () => {
     const answer = { board: board }
-    const encodeBoard = (board) => board.reduce((result, row, i) => result + `%5B${encodeURIComponent(row)}%5D${i === board.length - 1 ? '' : '%2C'}`, '')
-    const encodeParams = (params) =>
-      Object.keys(params)
-        .map(key => key + '=' + `%5B${encodeBoard(params[key])}%5D`)
-        .join('&')
-    
-    axios({
-      url: 'https://sugoku.herokuapp.com/validate',
+
+    fetch(`https://sugoku.herokuapp.com/validate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: encodeParams(answer)
     })
-      .then(({ data }) => {
-        alert(data.status)
+      .then(response => response.json())
+      .then(result => {
+        result.status === 'solved' ? props.navigation.replace('Finish', { username }) : alert(`Try resolving the sugoku again!`)
       })
-      .catch(err => console.log(err))
-  }
-
-  const solve = () => {
-    const answer = { board: board }
-    const encodeBoard = (board) => board.reduce((result, row, i) => result + `%5B${encodeURIComponent(row)}%5D${i === board.length - 1 ? '' : '%2C'}`, '')
-    const encodeParams = (params) =>
-      Object.keys(params)
-          .map(key => key + '=' + `%5B${encodeBoard(params[key])}%5D`)
-          .join('&')
-
-    axios({
-      url: 'https://sugoku.herokuapp.com/solve',
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: encodeParams(answer)
-    })
-      .then(({ data }) => {
-        setBoard(data.solution)
-      })
-      .catch(err => console.log(err))
+      .catch(console.log)
   }
 
   return (
       <View style={ styles.container }>
-        <Text style={ styles.header }> SUGOKU </Text>
+        <Image style={styles.image} source={require('../assets/logo.png')} />
+        <View style={ styles.level }>
+          <Text style={ styles.bold }>{ `Name: ${username}` }</Text>
+          <Text style={ styles.bold }>{ `Level: ${level}` }</Text>
+        </View>
         { 
           board.map((row, rowIndex) => {
             return (
@@ -80,6 +79,8 @@ export default function Game() {
                         key= { colIndex }
                         style= { styles.col }
                         maxLength= { 1 }
+                        keyboardType= 'numeric'
+                        // editable={board[rowIndex][colIndex] === 0 ? true : false}
                         textAlign= 'center'
                         value={col === 0 ? "" : String(col)}
                         onChangeText={ (value) => changeBoard(value, rowIndex, colIndex) }
@@ -91,8 +92,10 @@ export default function Game() {
             );
           }) 
         }
-        <Button title='VALIDATE' onPress={validate}/>
-        <Button title='SOLVE' onPress={solve}/>
+        <View style={ styles.button }>
+          <Button title='SOLVE' onPress={solve}/>
+          <Button title='VALIDATE' onPress={validate}/>
+        </View>
       </View>
   );
 }
@@ -117,6 +120,31 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 30,
     fontWeight: 'bold',
+    marginBottom: 25
+  },
+  image: {
+    width: 100,
+    height: 100,
+    marginBottom: 5
+  },
+  level: {
+    flexDirection: 'row',
+    marginTop: 10,
+    marginBottom: 10,
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    width: (windowWidth - 20),
+  },
+  bold: {
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+  button: {
+    width: (windowWidth - 40)/ 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    marginTop: 25,
     marginBottom: 25
   }
 });
